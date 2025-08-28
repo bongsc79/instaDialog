@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Widget Debug Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f4f4f4;
+        }
+        .debug-box {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 3px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+    </style>
+</head>
+<body>
+    <h1>Widget Debug Test</h1>
+    
+    <div class="debug-box">
+        <h3>Debug Information</h3>
+        <div id="debug-info">Loading...</div>
+    </div>
+    
+    <div class="debug-box">
+        <h3>Manual Widget Test</h3>
+        <button onclick="testWidgetManually()">Create Widget Manually</button>
+        <button onclick="testApiEndpoint()">Test API Endpoint</button>
+        <button onclick="testAbsoluteUrl()">Test Absolute URL</button>
+    </div>
+
+    <script>
+        // Debug logging
+        console.log('=== WIDGET DEBUG START ===');
+        console.log('Current page URL:', window.location.href);
+        console.log('Origin:', window.location.origin);
+        
+        // Test if we can reach the widget.js endpoint with absolute URL
+        async function testAbsoluteUrl() {
+            try {
+                const absoluteUrl = 'https://www.instadialog.com/api/widget/widget.js';
+                updateDebug('Testing absolute URL: ' + absoluteUrl, 'info');
+                
+                const response = await fetch(absoluteUrl);
+                console.log('Absolute URL response status:', response.status);
+                const content = await response.text();
+                console.log('Absolute URL content length:', content.length);
+                
+                if (response.ok) {
+                    updateDebug('✓ Absolute URL endpoint accessible', 'success');
+                } else {
+                    updateDebug('✗ Absolute URL endpoint failed: ' + response.status, 'error');
+                }
+            } catch (error) {
+                console.error('Absolute URL test error:', error);
+                updateDebug('✗ Absolute URL endpoint error: ' + error.message, 'error');
+            }
+        }
+        
+        // Test if we can reach the widget.js endpoint
+        async function testApiEndpoint() {
+            try {
+                const response = await fetch('/api/widget/widget.js');
+                console.log('Widget.js response status:', response.status);
+                const content = await response.text();
+                console.log('Widget.js content length:', content.length);
+                
+                if (response.ok) {
+                    updateDebug('✓ Widget.js endpoint accessible', 'success');
+                } else {
+                    updateDebug('✗ Widget.js endpoint failed: ' + response.status, 'error');
+                }
+            } catch (error) {
+                console.error('API test error:', error);
+                updateDebug('✗ Widget.js endpoint error: ' + error.message, 'error');
+            }
+        }
+        
+        // Test manual widget creation
+        function testWidgetManually() {
+            try {
+                // Create a simple test bubble
+                const existingWidget = document.querySelector('.test-widget');
+                if (existingWidget) existingWidget.remove();
+                
+                const widget = document.createElement('div');
+                widget.className = 'test-widget';
+                widget.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    width: 60px;
+                    height: 60px;
+                    background: #dc2626;
+                    border-radius: 50%;
+                    color: white;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    z-index: 10000;
+                    font-size: 24px;
+                `;
+                widget.innerHTML = '💬';
+                widget.onclick = () => alert('Manual widget works!');
+                
+                document.body.appendChild(widget);
+                updateDebug('✓ Manual widget created successfully', 'success');
+                console.log('Manual widget created');
+            } catch (error) {
+                console.error('Manual widget error:', error);
+                updateDebug('✗ Manual widget failed: ' + error.message, 'error');
+            }
+        }
+        
+        function updateDebug(message, type = 'info') {
+            const debugDiv = document.getElementById('debug-info');
+            const statusDiv = document.createElement('div');
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = new Date().toLocaleTimeString() + ': ' + message;
+            debugDiv.appendChild(statusDiv);
+        }
+        
+        // Check if script tag exists and log details
+        function checkScriptTag() {
+            const scripts = document.querySelectorAll('script[data-api-key]');
+            console.log('Found script tags with data-api-key:', scripts.length);
+            
+            scripts.forEach((script, index) => {
+                console.log(`Script ${index}:`, {
+                    src: script.src,
+                    apiKey: script.dataset.apiKey,
+                    loaded: script.readyState
+                });
+            });
+            
+            if (scripts.length > 0) {
+                updateDebug(`✓ Found ${scripts.length} widget script tag(s)`, 'success');
+            } else {
+                updateDebug('✗ No widget script tags found', 'error');
+            }
+        }
+        
+        // Check if widget classes exist
+        function checkWidgetElements() {
+            const widgets = document.querySelectorAll('.instadialog-widget');
+            console.log('Found widget elements:', widgets.length);
+            
+            if (widgets.length > 0) {
+                updateDebug(`✓ Found ${widgets.length} widget element(s)`, 'success');
+            } else {
+                updateDebug('✗ No widget elements found', 'warning');
+            }
+        }
+        
+        // Initial checks
+        updateDebug('Starting widget debug...', 'info');
+        checkScriptTag();
+        
+        // Run tests after a delay to allow widget to load
+        setTimeout(() => {
+            checkWidgetElements();
+            testApiEndpoint();
+            testAbsoluteUrl();
+        }, 2000);
+        
+        // Listen for errors
+        window.addEventListener('error', (e) => {
+            console.error('JavaScript error:', e.error);
+            updateDebug('✗ JavaScript error: ' + e.message, 'error');
+        });
+        
+        // Override console methods to capture widget logs
+        const originalLog = console.log;
+        console.log = function(...args) {
+            if (args.some(arg => typeof arg === 'string' && arg.includes('widget'))) {
+                updateDebug('Console: ' + args.join(' '), 'info');
+            }
+            originalLog.apply(console, args);
+        };
+    </script>
+
+    <!-- Widget Integration with absolute URL -->
+    <script>
+    (function() {
+        console.log('Widget script starting...');
+        var script = document.createElement('script');
+        
+        // Use absolute URL with www
+        script.src = 'https://www.instadialog.com/api/widget/widget.js';
+        
+        script.setAttribute('data-api-key', '30d7abb4-19a1-41c4-85a3-5040cc6f1d41');
+        script.setAttribute('data-title', 'Red Lounge');
+        script.setAttribute('data-subtitle', 'Hey let us know what you need?');
+        script.setAttribute('data-position', 'bottom-right');
+        script.setAttribute('data-primary-color', '#007bff');
+        
+        script.onload = function() {
+            console.log('Widget script loaded successfully from:', script.src);
+            updateDebug('✓ Widget script loaded from: ' + script.src, 'success');
+        };
+        
+        script.onerror = function(e) {
+            console.error('Widget script failed to load from:', script.src);
+            updateDebug('✗ Widget script failed to load from: ' + script.src, 'error');
+        };
+        
+        document.head.appendChild(script);
+        console.log('Widget script tag added to head with src:', script.src);
+    })();
+    </script>
+</body>
+</html>
